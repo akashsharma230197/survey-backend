@@ -9,6 +9,7 @@ const allowedOrigins = (process.env.FRONTEND_ORIGIN ?? "http://localhost:5173")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const renderFrontendPattern = /^https:\/\/survey-frontend[-\w]*\.onrender\.com$/;
 
 let surveys = [
   {
@@ -26,7 +27,7 @@ let surveys = [
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || renderFrontendPattern.test(origin)) {
         callback(null, true);
         return;
       }
@@ -36,6 +37,14 @@ app.use(
   })
 );
 app.use(express.json());
+
+app.get("/", (_request, response) => {
+  response.json({
+    message: "Survey backend is running",
+    health: "/api/health",
+    surveys: "/api/surveys"
+  });
+});
 
 app.get("/api/health", (_request, response) => {
   response.json({
