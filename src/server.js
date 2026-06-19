@@ -1,7 +1,10 @@
 import cors from "cors";
-import { randomUUID } from "node:crypto";
 import "dotenv/config";
 import express from "express";
+import { initSchema } from "./db.js";
+import { attributesRouter } from "./routes/attributes.js";
+import { sitesRouter } from "./routes/sites.js";
+import { assessmentsRouter } from "./routes/assessments.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
@@ -10,19 +13,6 @@ const allowedOrigins = (process.env.FRONTEND_ORIGIN ?? "http://localhost:5173")
   .map((origin) => origin.trim())
   .filter(Boolean);
 const renderFrontendPattern = /^https:\/\/survey-frontend[-\w]*\.onrender\.com$/;
-
-let surveys = [
-  {
-    id: randomUUID(),
-    title: "Product onboarding",
-    description: "Learn where new users get stuck during setup."
-  },
-  {
-    id: randomUUID(),
-    title: "Quarterly employee pulse",
-    description: "Collect lightweight sentiment across teams."
-  }
-];
 
 app.use(
   cors({
@@ -40,9 +30,10 @@ app.use(express.json());
 
 app.get("/", (_request, response) => {
   response.json({
-    message: "Survey backend is running",
+    message: "UXF-IUPS survey backend is running",
     health: "/api/health",
-    surveys: "/api/surveys"
+    attributes: "/api/attributes",
+    sites: "/api/sites"
   });
 });
 
@@ -54,29 +45,22 @@ app.get("/api/health", (_request, response) => {
   });
 });
 
-app.get("/api/surveys", (_request, response) => {
-  response.json(surveys);
+app.use("/api/attributes", attributesRouter);
+app.use("/api/sites", sitesRouter);
+app.use("/api/sites/:siteId/assessments", assessmentsRouter);
+
+app.use((error, _request, response, _next) => {
+  console.error(error);
+  response.status(500).json({ message: "Internal server error" });
 });
 
-app.post("/api/surveys", (request, response) => {
-  const title = String(request.body?.title ?? "").trim();
-  const description = String(request.body?.description ?? "").trim();
-
-  if (!title) {
-    response.status(400).json({ message: "Survey title is required" });
-    return;
-  }
-
-  const survey = {
-    id: randomUUID(),
-    title,
-    description
-  };
-
-  surveys = [survey, ...surveys];
-  response.status(201).json(survey);
-});
-
-app.listen(port, () => {
-  console.log(`Survey backend listening on http://localhost:${port}`);
-});
+initSchema()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`Survey backend listening on http://localhost:${port}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Failed to initialise database schema", error);
+    process.exit(1);
+  });
