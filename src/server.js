@@ -5,6 +5,11 @@ import { initSchema } from "./db.js";
 import { attributesRouter } from "./routes/attributes.js";
 import { sitesRouter } from "./routes/sites.js";
 import { assessmentsRouter } from "./routes/assessments.js";
+import { auditRouter } from "./routes/audit.js";
+import { observationsRouter } from "./routes/observations.js";
+import { personasRouter } from "./routes/personas.js";
+import { interventionsRouter } from "./routes/interventions.js";
+import { reportCardRouter } from "./routes/reportCard.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
@@ -48,6 +53,11 @@ app.get("/api/health", (_request, response) => {
 app.use("/api/attributes", attributesRouter);
 app.use("/api/sites", sitesRouter);
 app.use("/api/sites/:siteId/assessments", assessmentsRouter);
+app.use("/api/sites/:siteId/audit", auditRouter);
+app.use("/api/sites/:siteId/observations", observationsRouter);
+app.use("/api/sites/:siteId/personas", personasRouter);
+app.use("/api/sites/:siteId/interventions", interventionsRouter);
+app.use("/api/sites/:siteId/report-card", reportCardRouter);
 
 app.use((error, _request, response, _next) => {
   console.error(error);
